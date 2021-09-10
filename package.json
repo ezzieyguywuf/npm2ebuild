@@ -1,5 +1,8 @@
 {
   "name": "npm2ebuild",
+  "bin": {
+    "npm2ebuild": "./main.js"
+  },
   "version": "0.0.1",
   "description": "A tool for generating gentoo ebuilds from npm packages",
   "main": "main.js",
