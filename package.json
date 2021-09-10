@@ -18,5 +18,6 @@
   "bugs": {
     "url": "https://github.com/ezzieyguywuf/npm2ebuild/issues"
   },
-  "homepage": "https://github.com/ezzieyguywuf/npm2ebuild#readme"
+  "homepage": "https://github.com/ezzieyguywuf/npm2ebuild#readme",
+  "type": "module"
 }

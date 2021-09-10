@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-console.log("Hello, js!");
+import { cli } from "./cli.js"
+
+cli();
