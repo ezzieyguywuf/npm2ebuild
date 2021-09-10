@@ -1,11 +1,11 @@
 {
   "name": "npm2ebuild",
   "bin": {
-    "npm2ebuild": "./main.js"
+    "npm2ebuild": "./src/main.js"
   },
   "version": "0.0.1",
   "description": "A tool for generating gentoo ebuilds from npm packages",
-  "main": "main.js",
+  "main": "./src/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
