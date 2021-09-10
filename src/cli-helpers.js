@@ -6,4 +6,10 @@ export function getTargetFilename() {
     console.log("Please provide an npm package name as a target");
     return null;
   }
+  else if (args.length > 3)
+  {
+    console.log(`Ignoring arguements: ${args.slice(3).join(' ')}`)
+  }
+
+  return args[2]
 }
