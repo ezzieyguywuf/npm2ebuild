@@ -1,3 +1,5 @@
+import { spawn } from "child_process";
+
 export function getTargetFilename() {
   const args = process.argv;
 
@@ -12,4 +14,28 @@ export function getTargetFilename() {
   }
 
   return args[2]
+}
+
+export async function getDependencies(pkg) {
+  const child = spawn("npm", ["--json", "view", `${pkg}`, "dependencies"]);
+
+  let data = "";
+  for await (const chunk of child.stdout) {
+    data += chunk;
+  }
+
+  let err = "";
+  for await(const chunk of child.stderr) {
+    err += chunk;
+  }
+
+  const exitCode = await new Promise((resolve, reject) => {
+    child.on('close', resolve);
+  });
+
+  if (exitCode) {
+    throw new Error(err);
+  }
+
+  return JSON.parse(data);
 }
