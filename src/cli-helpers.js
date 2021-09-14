@@ -68,11 +68,11 @@ function getDeps(pkg, ver) {
   return new Promise((resolve, reject) => {
     const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
     const req = https.get(url, options, incomingMessage => {
-      let data = "";
+      let data = [];
 
-      incomingMessage.on("data", d => data += d);
+      incomingMessage.on("data", d => data.push(d));
       incomingMessage.on("end", _ => {
-        const packument = JSON.parse(data);
+        const packument = JSON.parse(data.join(""));
 
         if (packument.versions[ver]) {
           resolve(packument.versions[ver].devDependencies);
