@@ -1,6 +1,10 @@
 import { spawn } from "child_process";
 import semver from "semver";
 import https from "https";
+import ebuildh from "./ebuild-helpers.js"
+import fs from "fs";
+import fsp from "fs/promises";
+import path from "path";
 
 let PKMNT_CACHE = {};
 
@@ -91,21 +95,59 @@ async function recurseDeps(packument, ver, accumDeps) {
   return accumDeps;
 }
 
-export async function getDependencies(pkg) {
-  console.log(`    getting deps for ${pkg}`)
-  const packument = await getPackument(pkg);
-  const ver = packument["dist-tags"].latest;
+async function writeEbuild(pkg, subdir, ver) {
+  if (semver.prerelease(ver)) {
+    console.log(`ERROR ERROR ERROR DON'T KNOW HOW TO HANDLE ${ver}`)
+  }
+  const fpath = `${path.join(subdir, pkg.name)}-${ver}.ebuild`;
+  const h = await fsp.open(fpath, "w");
+
+  await h.write(ebuildh.makeEbuild(pkg, ver));
+  await h.close();
+}
+
+async function writeMetadata(subdir) {
+  const fpath = `${path.join(subdir, "metadata.xml")}`;
+  const h = await fsp.open(fpath, "w");
+
+  await h.write(ebuildh.makeMetadata());
+  await h.close();
+}
+
+async function writePackage(pkmnt, subdir, ver) {
+  const targetDir = path.join(subdir, pkmnt.name);
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, {recursive: true});
+  }
+
+  await writeEbuild(pkmnt, targetDir, ver);
+  await writeMetadata(targetDir);
+}
+
+export async function makeEbuilds(pkg, subdir) {
+  const pkmnt = await getPackument(pkg);
+  const ver = pkmnt["dist-tags"].latest;
+
+  console.log(`    Building ebuilds for ${pkg} and deps`)
   console.log(`    got latest ver = ${ver}`)
+
+  await writePackage(pkmnt, subdir, ver);
+
   console.log(`    building recursive list of deps...`);
+  const deps = await recurseDeps(pkmnt, ver, []);
+  console.log(`    ...done, fetched ${deps.length} dependencies`);
 
-  const deps = await recurseDeps(packument, ver, []);
-  console.log(`    ...done, fetched ${deps.length} dependencies`)
-
-  return deps;
+  console.log(`    writing ebuilds for each dep`);
+  await Promise.all(deps.map( dep => {
+    return getPackument(dep.pkg).then( devPkmnt => {
+      return writePackage(devPkmnt, subdir, dep.ver);
+    })
+  }))
 }
 
 export default {
   getTargetFilename,
   getPackument,
-  getDependencies
+  makeEbuilds
 }
