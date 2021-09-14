@@ -14,9 +14,18 @@ export function cli() {
 
     getDependencies(target).then(deps => {
       console.log(`\ngot deps:`);
-      Object.keys(deps).forEach((key) => console.log(`  ${key}: ${deps[key]}`));
+      Object.keys(deps).forEach((key) => {
+        let out = `    ${key}: `;
+
+        if (typeof(deps[key]) === 'object') {
+          out += JSON.stringify(deps[key])
+        }
+        else {
+          out += deps[key]
+        }
+        console.log(out);
+      })
     }).catch(err => {
-      console.log(`Could not get info from NPM, see detailed error below\n`)
       console.log(`${err}`);
     });
   }

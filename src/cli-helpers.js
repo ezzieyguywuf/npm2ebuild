@@ -1,4 +1,8 @@
 import { spawn } from "child_process";
+import semver from "semver";
+import https from "https";
+
+const REGISTRY = "https://registry.npmjs.org/"
 
 export function getTargetFilename() {
   const args = process.argv;
@@ -10,21 +14,20 @@ export function getTargetFilename() {
   }
   else if (args.length > 3)
   {
-    console.log(`Ignoring arguements: ${args.slice(3).join(' ')}`)
+    console.log(`Ignoring arguments: ${args.slice(3).join(' ')}`)
   }
 
   return args[2]
 }
 
-export async function getDependencies(pkg) {
-  const child = spawn("npm", ["--json", "view", `${pkg}`, "dependencies"]);
-
+export async function runCommand(child) {
   let data = "";
+  let err = "";
+
   for await (const chunk of child.stdout) {
     data += chunk;
   }
 
-  let err = "";
   for await(const chunk of child.stderr) {
     err += chunk;
   }
@@ -34,8 +37,85 @@ export async function getDependencies(pkg) {
   });
 
   if (exitCode) {
-    throw new Error(err);
+    throw new Error(`cmd = ${child.spawnargs.join(' ')}:\n${err}`);
   }
 
-  return JSON.parse(data);
+  return data;
+}
+
+function getVersions(pkg) {
+  const url = REGISTRY + pkg;
+
+  return new Promise((resolve, reject) => {
+    const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
+    const req = https.get(url, options, incomingMessage => {
+      let data = "";
+
+      incomingMessage.on("data", d => data += d);
+      incomingMessage.on("end", _ => {
+        resolve(Object.keys(JSON.parse(data).versions));
+      })
+    })
+
+    req.on('error', error => reject(error));
+    req.end();
+  })
+}
+
+function getDeps(pkg, ver) {
+  const url = REGISTRY + `${pkg}`;
+
+  return new Promise((resolve, reject) => {
+    const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
+    const req = https.get(url, options, incomingMessage => {
+      let data = "";
+
+      incomingMessage.on("data", d => data += d);
+      incomingMessage.on("end", _ => {
+        const packument = JSON.parse(data);
+
+        if (packument.versions[ver]) {
+          resolve(packument.versions[ver].devDependencies);
+        }
+        else {
+          reject(`Unable to find version ${ver} for package ${pkg}`)
+        }
+      })
+    })
+
+    req.on('error', error => reject(error));
+    req.end();
+  })
+}
+
+async function getPackument(pkg) {
+  const url = REGISTRY + `${pkg}`;
+
+  return new Promise((resolve, reject) => {
+    const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
+    const req = https.get(url, options, incomingMessage => {
+      let data = "";
+
+      incomingMessage.on("data", d => data += d);
+      incomingMessage.on("end", _ => {
+        const packument = JSON.parse(data);
+
+        resolve(packument);
+      })
+    })
+
+    req.on('error', error => reject(error));
+    req.end();
+  })
+}
+
+export async function getDependencies(pkg) {
+  console.log(`    getting deps for ${pkg}`)
+  const packument = await getPackument(pkg);
+  const ver = packument["dist-tags"].latest;
+  console.log(`    get latest ver = ${ver}`)
+
+  const deps = await getDeps(pkg, ver);
+
+  return deps;
 }

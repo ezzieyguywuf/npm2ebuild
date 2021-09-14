@@ -19,5 +19,13 @@
     "url": "https://github.com/ezzieyguywuf/npm2ebuild/issues"
   },
   "homepage": "https://github.com/ezzieyguywuf/npm2ebuild#readme",
-  "type": "module"
+  "type": "module",
+  "DEPENDENCIES (comments)": [
+    "Any dependency should be cached.",
+    "semver ships with npm"
+  ],
+  "dependencies": {
+    "babel-core": "^6.26.3",
+    "semver": "^7.3.5"
+  }
 }
