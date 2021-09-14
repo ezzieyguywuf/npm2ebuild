@@ -103,3 +103,9 @@ export async function getDependencies(pkg) {
 
   return deps;
 }
+
+export default {
+  getTargetFilename,
+  getPackument,
+  getDependencies
+}

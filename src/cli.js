@@ -1,5 +1,5 @@
-import * as clih from "./cli-helpers.js"
-import * as ebuildh from "./ebuild-helpers.js"
+import clih from "./cli-helpers.js"
+import ebuildh from "./ebuild-helpers.js"
 import fs from "fs";
 
 export async function cli() {

@@ -65,3 +65,5 @@ src_install() {
 	einstalldocs
 }`;
 }
+
+export default { makeEbuild }
