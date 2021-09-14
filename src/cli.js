@@ -14,7 +14,7 @@ export async function cli() {
     // const deps = await clih.getDependencies(target);
     // deps.forEach(({ pkg, ver }) => console.log(`    ${pkg}: ${ver}`))
     const pkmnt = await clih.getPackument(target);
-    const ebuild = ebuildh.makeEbuild(pkmnt, "6.26.2");
+    const ebuild = await ebuildh.makeEbuild(pkmnt, "6.26.2");
 
     console.log(ebuild)
   }
