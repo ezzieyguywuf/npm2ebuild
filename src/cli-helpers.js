@@ -62,32 +62,6 @@ function getVersions(pkg) {
   })
 }
 
-function getDeps(pkg, ver) {
-  const url = REGISTRY + `${pkg}`;
-
-  return new Promise((resolve, reject) => {
-    const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
-    const req = https.get(url, options, incomingMessage => {
-      let data = [];
-
-      incomingMessage.on("data", d => data.push(d));
-      incomingMessage.on("end", _ => {
-        const packument = JSON.parse(data.join(""));
-
-        if (packument.versions[ver]) {
-          resolve(packument.versions[ver].devDependencies);
-        }
-        else {
-          reject(`Unable to find version ${ver} for package ${pkg}`)
-        }
-      })
-    })
-
-    req.on('error', error => reject(error));
-    req.end();
-  })
-}
-
 async function getPackument(pkg) {
   const url = REGISTRY + `${pkg}`;
 
@@ -115,7 +89,7 @@ export async function getDependencies(pkg) {
   const ver = packument["dist-tags"].latest;
   console.log(`    get latest ver = ${ver}`)
 
-  const deps = await getDeps(pkg, ver);
+  const deps = packument.versions[ver].dependencies;
 
   return deps;
 }
