@@ -3,7 +3,7 @@ import {
   getDependencies
 } from "./cli-helpers.js"
 
-export function cli() {
+export async function cli() {
   const target = getTargetFilename();
 
   if (target === null) {
@@ -12,21 +12,9 @@ export function cli() {
   else {
     console.log(`Ok, generating ebuild(s) for ${target}`);
 
-    getDependencies(target).then(deps => {
-      console.log(`\ngot deps:`);
-      Object.keys(deps).forEach((key) => {
-        let out = `    ${key}: `;
+    const deps = await getDependencies(target);
 
-        if (typeof(deps[key]) === 'object') {
-          out += JSON.stringify(deps[key])
-        }
-        else {
-          out += deps[key]
-        }
-        console.log(out);
-      })
-    }).catch(err => {
-      console.log(`${err}`);
-    });
+    console.log(JSON.stringify(deps))
+    deps.forEach(({ pkg, ver }) => console.log(`    ${pkg}: ${ver}`))
   }
 }
