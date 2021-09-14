@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import semver from "semver";
 import https from "https";
 
-const REGISTRY = "https://registry.npmjs.org/"
+let PKMNT_CACHE = {};
 
 export function getTargetFilename() {
   const args = process.argv;
@@ -20,76 +20,86 @@ export function getTargetFilename() {
   return args[2]
 }
 
-export async function runCommand(child) {
-  let data = "";
-  let err = "";
-
-  for await (const chunk of child.stdout) {
-    data += chunk;
-  }
-
-  for await(const chunk of child.stderr) {
-    err += chunk;
-  }
-
-  const exitCode = await new Promise((resolve, reject) => {
-    child.on('close', resolve);
-  });
-
-  if (exitCode) {
-    throw new Error(`cmd = ${child.spawnargs.join(' ')}:\n${err}`);
-  }
-
-  return data;
-}
-
-function getVersions(pkg) {
-  const url = REGISTRY + pkg;
-
-  return new Promise((resolve, reject) => {
-    const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
-    const req = https.get(url, options, incomingMessage => {
-      let data = "";
-
-      incomingMessage.on("data", d => data += d);
-      incomingMessage.on("end", _ => {
-        resolve(Object.keys(JSON.parse(data).versions));
-      })
-    })
-
-    req.on('error', error => reject(error));
-    req.end();
-  })
-}
-
 async function getPackument(pkg) {
-  const url = REGISTRY + `${pkg}`;
+  if (PKMNT_CACHE[pkg]) {
+    return PKMNT_CACHE[pkg];
+  }
+  else {
+    console.log(`fetching packument for ${pkg}`)
+    const url = `https://registry.npmjs.org/${pkg}`;
 
-  return new Promise((resolve, reject) => {
-    const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
-    const req = https.get(url, options, incomingMessage => {
-      let data = "";
+    return new Promise((resolve, reject) => {
+      const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
+      const req = https.get(url, options, incomingMessage => {
+        let data = "";
 
-      incomingMessage.on("data", d => data += d);
-      incomingMessage.on("end", _ => {
-        const packument = JSON.parse(data);
+        incomingMessage.on("data", d => data += d);
+        incomingMessage.on("end", _ => {
+          const packument = JSON.parse(data);
 
-        resolve(packument);
+          PKMNT_CACHE[pkg] = packument;
+          resolve(packument);
+        })
       })
+
+      req.on('error', error => reject(error));
+      req.end();
+    })
+  }
+}
+
+async function recurseDeps(packument, ver, accumDeps) {
+  const deps = packument.versions[ver].dependencies;
+
+  if (deps !== undefined) {
+    let promises = [];
+    Object.keys(deps).forEach(dep => {
+      promises.push(getPackument(dep))
     })
 
-    req.on('error', error => reject(error));
-    req.end();
-  })
+    const results = await Promise.all(promises);
+
+    // reset the array
+    promises.length = 0;
+
+    const unpackResult = result => {
+      const dep = result.name;
+      const vers = Object.keys(result.versions);
+      const depVer = semver.maxSatisfying(vers, deps[dep]);
+      return {dep: dep, vers: vers, depVer: depVer};
+    }
+
+    results.forEach(result => {
+      const {dep, vers, depVer} = unpackResult(result);
+
+      const hasDep = ({ pkg, ver }) => pkg === dep && ver === depVer;
+
+      if (!accumDeps.some(hasDep)) {
+        accumDeps.push({pkg: dep, ver: depVer});
+
+        promises.push(getPackument(dep).then(pkmnt => {
+          return {pkmnt: pkmnt, depVer: depVer};
+        }))
+      }
+    })
+
+    const pkmnts = await Promise.all(promises);
+
+    for (const {pkmnt, depVer} of pkmnts) {
+      accumDeps = await recurseDeps(pkmnt, depVer, accumDeps);
+    }
+  }
+
+  return accumDeps;
 }
 
 export async function getDependencies(pkg) {
   console.log(`    getting deps for ${pkg}`)
   const packument = await getPackument(pkg);
   const ver = packument["dist-tags"].latest;
-  console.log(`    get latest ver = ${ver}`)
+  console.log(`    got latest ver = ${ver}`)
 
-  const deps = packument.versions[ver].dependencies;
+  const deps = await recurseDeps(packument, ver, []);
 
   return deps;
 }
