@@ -20,17 +20,15 @@ export function getTargetFilename() {
   return args[2]
 }
 
-async function getPackument(pkg) {
+export async function getPackument(pkg) {
   if (PKMNT_CACHE[pkg]) {
     return PKMNT_CACHE[pkg];
   }
   else {
-    console.log(`fetching packument for ${pkg}`)
     const url = `https://registry.npmjs.org/${pkg}`;
 
     return new Promise((resolve, reject) => {
-      const options = {headers: {Accept: "application/vnd.npm.install-v1+json"}}
-      const req = https.get(url, options, incomingMessage => {
+      const req = https.get(url, incomingMessage => {
         let data = "";
 
         incomingMessage.on("data", d => data += d);
@@ -98,8 +96,10 @@ export async function getDependencies(pkg) {
   const packument = await getPackument(pkg);
   const ver = packument["dist-tags"].latest;
   console.log(`    got latest ver = ${ver}`)
+  console.log(`    building recursive list of deps...`);
 
   const deps = await recurseDeps(packument, ver, []);
+  console.log(`    ...done, fetched ${deps.length} dependencies`)
 
   return deps;
 }
