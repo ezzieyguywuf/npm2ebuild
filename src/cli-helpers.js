@@ -96,10 +96,11 @@ async function recurseDeps(packument, ver, accumDeps) {
 }
 
 async function writeEbuild(pkg, subdir, ver) {
+  let cleanVer = ver
   if (semver.prerelease(ver)) {
-    console.log(`ERROR ERROR ERROR DON'T KNOW HOW TO HANDLE ${ver}`)
+    cleanVer = `${semver.major(ver)}.${semver.minor(ver)}.${semver.patch(ver)}`
   }
-  const fpath = `${path.join(subdir, pkg.name)}-${ver}.ebuild`;
+  const fpath = `${path.join(subdir, pkg.name.replace("@", "").replace("/", "-"))}-${cleanVer}.ebuild`;
   const h = await fsp.open(fpath, "w");
 
   await h.write(ebuildh.makeEbuild(pkg, ver));
@@ -115,7 +116,7 @@ async function writeMetadata(subdir) {
 }
 
 async function writePackage(pkmnt, subdir, ver) {
-  const targetDir = path.join(subdir, pkmnt.name);
+  const targetDir = path.join(subdir, pkmnt.name.replace("@", "").replace("/", "-"));
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, {recursive: true});
@@ -133,6 +134,9 @@ export async function makeEbuilds(pkg, subdir) {
   console.log(`    got latest ver = ${ver}`)
 
   await writePackage(pkmnt, subdir, ver);
+
+  let keys = Object.keys(pkmnt.versions[ver])
+  console.log(`keys = ${keys}`)
 
   console.log(`    building recursive list of deps...`);
   const deps = await recurseDeps(pkmnt, ver, []);
