@@ -5,7 +5,6 @@ export function makeEbuild(pckmnt, ver) {
   const { dependencies } = versions[ver];
   const today = new Date();
   const promises = [];
-  const licensePattern = /(BSD-\d).*/
 
   let license = versions[ver].license
 
@@ -13,7 +12,7 @@ export function makeEbuild(pckmnt, ver) {
     license = "BSD";
   }
   else if (license.match(/(BSD-\d).*/)) {
-    license = license.replace(licensePattern, "$1")
+    license = license.replace(/BSD-\d).*/, "$1")
   }
 
   let deps = null;
@@ -53,7 +52,6 @@ export function makeEbuild(pckmnt, ver) {
       deps = ["net-libs/nodejs"]
     }
     INSTALL_BIN = `\n
-	
 `
   }
 
@@ -135,6 +133,7 @@ src_install() {
 		--color false \\
 		--foreground-scripts \\
 		--global \\
+        --global-style \\
 		--offline \\
 		--omit dev \\
 		--prefix "\${ED}"/usr \\
