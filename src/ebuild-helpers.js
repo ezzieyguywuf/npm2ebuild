@@ -12,7 +12,7 @@ export function makeEbuild(pckmnt, ver) {
     license = "BSD";
   }
   else if (license.match(/(BSD-\d).*/)) {
-    license = license.replace(/BSD-\d).*/, "$1")
+    license = license.replace(/(BSD-\d).*/, "$1")
   }
 
   let deps = null;
@@ -51,8 +51,7 @@ export function makeEbuild(pckmnt, ver) {
     else {
       deps = ["net-libs/nodejs"]
     }
-    INSTALL_BIN = `\n
-`
+    INSTALL_BIN = ` ${versions[ver].bin}`
   }
 
   let depString = "";
@@ -61,7 +60,6 @@ export function makeEbuild(pckmnt, ver) {
       depString = `RDEPEND="${deps[0]}"`
     }
     else {
-      console.log(`deps = ${deps}`)
       depString = `RDEPEND="\n\t${deps.join('\n\t')}\n"`
     }
   }
@@ -103,8 +101,6 @@ ${MY_P}
   else {
     src = "https://registry.npmjs.org/\${PN}/-/\${P}.tgz"
   }
-
-  let INSTALL_BIN = "";
 
   return `# Copyright ${today.getFullYear()} Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
