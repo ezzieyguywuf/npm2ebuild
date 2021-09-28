@@ -21,3 +21,10 @@ After cloning the repository, the program can be run as follows:
 ```
 
 where `<package-name>` is a valid npm package such as `babel-core`.
+
+This will create a `dev-js` directory in the current directory, which will
+contain an ebuild for the given package as well as all its dependencies.
+
+Currently this tool does not generate manifests for these ebuilds, so you'll
+need to use a tool such as `repoman` to generate manifests before you can merge
+them.
